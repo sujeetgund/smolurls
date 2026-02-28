@@ -21,6 +21,22 @@ uv sync
 uv run uvicorn main:app --reload
 ```
 
+## Docker
+
+Build image:
+
+```powershell
+docker build -t smolurls .
+```
+
+Run container:
+
+```powershell
+docker run --rm -p 8080:8080 -e DATABASE_URL="postgresql+psycopg://postgres:postgres@host.docker.internal:5432/smolurls" smolurls
+```
+
+The container starts with `uv run uvicorn main:app --host 0.0.0.0 --port 8080`.
+
 Server runs on one port (default: `http://127.0.0.1:8000`) and serves both REST + MCP.
 
 ## CORS

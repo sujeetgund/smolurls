@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import router
-from .db import init_db
-from .mcp_server import mcp
+from app.api import router
+from app.db import init_db
+from app.mcp_server import mcp
 
 
 def create_api_app() -> FastAPI:

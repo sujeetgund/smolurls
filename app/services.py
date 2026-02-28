@@ -5,8 +5,8 @@ import string
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .db import engine
-from .models import ClickEvent, ShortURL
+from app.db import engine
+from app.models import ClickEvent, ShortURL
 
 
 ALIAS_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,32}$")

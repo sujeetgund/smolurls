@@ -1,6 +1,6 @@
 from fastmcp import FastMCP
 
-from .services import (
+from app.services import (
     AliasConflictError,
     AliasValidationError,
     IdGenerationError,
