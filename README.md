@@ -1,12 +1,19 @@
 # smolurls
 
-URL Shortener + Analytics API with MCP support, built using FastAPI and FastMCP on the same port.
+A clean, production-ready URL shortener with analytics and native MCP tooling—built on FastAPI + FastMCP, served on a single port.
+
+## Why this project
+
+- Fast URL shortening with optional custom aliases
+- Redirect tracking with per-click event data
+- MCP tools for agent-native access to shorten, lookup, list, and analytics
+- Single service surface: REST + MCP together
 
 ## Requirements
 
 - Python 3.12+
 - PostgreSQL
-- `DATABASE_URL` environment variable
+- `DATABASE_URL` set in your environment
 
 Example:
 
@@ -14,42 +21,103 @@ Example:
 $env:DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/smolurls"
 ```
 
-## Install & Run
+## Run locally
 
 ```powershell
 uv sync
 uv run uvicorn main:app --reload
 ```
 
-## Docker
+Default server: `http://127.0.0.1:8000`
 
-Build image:
+## Run with Docker
+
+Build:
 
 ```powershell
 docker build -t smolurls .
 ```
 
-Run container:
+Run:
 
 ```powershell
 docker run --rm -p 8080:8080 -e DATABASE_URL="postgresql+psycopg://postgres:postgres@host.docker.internal:5432/smolurls" smolurls
 ```
 
-The container starts with `uv run uvicorn main:app --host 0.0.0.0 --port 8080`.
-
-Server runs on one port (default: `http://127.0.0.1:8000`) and serves both REST + MCP.
+Container entrypoint runs:
+`uvicorn main:app --log-level info --host 0.0.0.0 --port ${PORT}`
 
 ## CORS
 
-The app is configured with global permissive CORS:
+Global permissive CORS is enabled:
 
 - `allow_origins = ["*"]`
 - `allow_methods = ["*"]`
 - `allow_headers = ["*"]`
 
-This allows browser clients from any origin to call REST routes and the `/mcp` endpoint.
+## API routes
 
-## Project Structure
+- `GET /{id}` → redirect to original URL (`307`)
+- `POST /shorten` → create short URL
+- `GET /shorten/{id}` → get one short URL
+- `GET /shorten/all` → list all short URLs
+- `GET /analytics/{id}` → analytics for one short URL
+- `GET /mcp` → MCP endpoint
+
+## MCP tools
+
+Defined in `app/mcp_server.py`:
+
+- `shorten_url(url, custom_alias=None)`
+- `get_short_url(short_id)`
+- `list_urls()`
+- `get_analytics(short_id)`
+
+## Request example
+
+`POST /shorten`
+
+```json
+{
+  "url": "https://example.com/very/long/path",
+  "custom_alias": "my-link"
+}
+```
+
+`custom_alias` is optional and must match: `^[A-Za-z0-9_-]{3,32}$`
+
+## Analytics response shape
+
+- `total_clicks`
+- `events[]`
+  - `clicked_at`
+  - `ip_address`
+  - `user_agent`
+  - `referrer`
+
+## ER Diagram
+
+```mermaid
+erDiagram
+  SHORT_URLS {
+    string id PK
+    text long_url
+    datetime created_at
+  }
+
+  CLICK_EVENTS {
+    int event_id PK
+    string short_id FK
+    datetime clicked_at
+    string ip_address
+    text user_agent
+    text referrer
+  }
+
+  SHORT_URLS ||--o{ CLICK_EVENTS : tracks
+```
+
+## Project layout
 
 ```text
 smolurls/
@@ -67,59 +135,9 @@ smolurls/
 └─ README.md
 ```
 
-## Routes
+## Smoke test (uv-only)
 
-- `GET /{id}` - Redirect to the long URL (`307`)
-- `POST /shorten` - Shorten long URL
-- `GET /shorten/{id}` - Get short URL info
-- `GET /shorten/all` - Get all shortened URLs
-- `GET /analytics/{id}` - Get analytics (click events with IP, user-agent, referrer)
-- `/mcp` - MCP endpoint
-
-## MCP Tools
-
-Defined in `app/mcp_server.py` with explicit docstrings for agent discovery:
-
-- `shorten_url(url, custom_alias=None)`
-- `get_short_url(short_id)`
-- `list_urls()`
-- `get_analytics(short_id)`
-
-## API Examples
-
-### Create short URL
-
-`POST /shorten`
-
-```json
-{
-  "url": "https://example.com/very/long/path",
-  "custom_alias": "my-link"
-}
-```
-
-`custom_alias` is optional and must match `^[A-Za-z0-9_-]{3,32}$`.
-
-### Short URL info
-
-`GET /shorten/my-link`
-
-### List all
-
-`GET /shorten/all`
-
-### Analytics
-
-`GET /analytics/my-link`
-
-Response includes:
-
-- `total_clicks`
-- `events[]` with `clicked_at`, `ip_address`, `user_agent`, `referrer`
-
-## Smoke Test (uv-only)
-
-Use a second terminal after starting the server.
+Run in a second terminal after the server starts.
 
 ```powershell
 uv run python -c "import json,urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/shorten', data=json.dumps({'url':'https://example.com','custom_alias':'my-link'}).encode(), headers={'Content-Type':'application/json'}, method='POST'); resp=urllib.request.urlopen(req); print(resp.status, resp.read().decode())"

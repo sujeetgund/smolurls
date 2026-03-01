@@ -1,4 +1,4 @@
-FROM python:3.13-slim-bookworm
+FROM python:3.13-slim-bookworm AS builder
 
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends build-essential libpq-dev \
@@ -9,17 +9,34 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
 	PYTHONUNBUFFERED=1 \
-	PORT=8080
+	UV_PYTHON_DOWNLOADS=never
 
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --no-install-project --python /usr/local/bin/python3.13
 
 COPY . .
+RUN uv sync --frozen --no-dev --python /usr/local/bin/python3.13
 
-RUN uv sync --frozen --no-dev
+
+FROM python:3.13-slim-bookworm AS runtime
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends libpq5 \
+	&& rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+	PYTHONUNBUFFERED=1 \
+	PORT=8080 \
+	PATH="/app/.venv/bin:$PATH"
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/main.py /app/main.py
+COPY --from=builder /app/app /app/app
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "uv run uvicorn main:app --log-level info --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "uvicorn main:app --log-level info --host 0.0.0.0 --port ${PORT}"]

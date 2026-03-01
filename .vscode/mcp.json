@@ -1,7 +1,7 @@
 {
   "servers": {
     "smolurls-mcp-server": {
-      "url": "https://localhost:8080/mcp/",
+      "url": "http://localhost:8080/mcp/",
       "type": "http"
     }
   },
