@@ -13,12 +13,13 @@ A clean, production-ready URL shortener with analytics and native MCP tooling—
 
 - Python 3.12+
 - PostgreSQL
-- `DATABASE_URL` set in your environment
+- `DATABASE_URL` and `BASE_URL` set in your environment
 
 Example:
 
 ```powershell
 $env:DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/smolurls"
+$env:BASE_URL = "http://127.0.0.1:8000/api/v1"
 ```
 
 ## Run locally
@@ -44,6 +45,12 @@ Run:
 docker run --rm -p 8080:8080 -e DATABASE_URL="postgresql+psycopg://postgres:postgres@host.docker.internal:5432/smolurls" smolurls
 ```
 
+Add `BASE_URL` when running containers (example):
+
+```powershell
+docker run --rm -p 8080:8080 -e DATABASE_URL="postgresql+psycopg://postgres:postgres@host.docker.internal:5432/smolurls" -e BASE_URL="http://localhost:8080" smolurls
+```
+
 Container entrypoint runs:
 `uvicorn main:app --log-level info --host 0.0.0.0 --port ${PORT}`
 
@@ -57,11 +64,11 @@ Global permissive CORS is enabled:
 
 ## API routes
 
-- `GET /{id}` → redirect to original URL (`307`)
-- `POST /shorten` → create short URL
-- `GET /shorten/{id}` → get one short URL
-- `GET /shorten/all` → list all short URLs
-- `GET /analytics/{id}` → analytics for one short URL
+- `GET /api/v1/{id}` → redirect to original URL (`307`)
+- `POST /api/v1/shorten` → create short URL
+- `GET /api/v1/shorten/{id}` → get one short URL
+- `GET /api/v1/shorten/all` → list all short URLs
+- `GET /api/v1/analytics/{id}` → analytics for one short URL
 - `GET /mcp` → MCP endpoint
 
 ## MCP tools
@@ -75,7 +82,7 @@ Defined in `app/mcp_server.py`:
 
 ## Request example
 
-`POST /shorten`
+`POST /api/v1/shorten`
 
 ```json
 {
@@ -140,10 +147,10 @@ smolurls/
 Run in a second terminal after the server starts.
 
 ```powershell
-uv run python -c "import json,urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/shorten', data=json.dumps({'url':'https://example.com','custom_alias':'my-link'}).encode(), headers={'Content-Type':'application/json'}, method='POST'); resp=urllib.request.urlopen(req); print(resp.status, resp.read().decode())"
-uv run python -c "import urllib.request; resp=urllib.request.urlopen('http://127.0.0.1:8000/shorten/my-link'); print(resp.status, resp.read().decode())"
-uv run python -c "import urllib.request; resp=urllib.request.urlopen('http://127.0.0.1:8000/shorten/all'); print(resp.status, resp.read().decode())"
-uv run python -c "import urllib.request; class NoRedirect(urllib.request.HTTPRedirectHandler):\n    def redirect_request(self, req, fp, code, msg, headers, newurl):\n        return None\n; opener=urllib.request.build_opener(NoRedirect); req=urllib.request.Request('http://127.0.0.1:8000/my-link', method='GET');\ntry:\n    opener.open(req)\nexcept urllib.error.HTTPError as e:\n    print(e.code, e.headers.get('Location'))"
-uv run python -c "import urllib.request; resp=urllib.request.urlopen('http://127.0.0.1:8000/analytics/my-link'); print(resp.status, resp.read().decode())"
+uv run python -c "import json,urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/api/v1/shorten', data=json.dumps({'url':'https://example.com','custom_alias':'my-link'}).encode(), headers={'Content-Type':'application/json'}, method='POST'); resp=urllib.request.urlopen(req); print(resp.status, resp.read().decode())"
+uv run python -c "import urllib.request; resp=urllib.request.urlopen('http://127.0.0.1:8000/api/v1/shorten/my-link'); print(resp.status, resp.read().decode())"
+uv run python -c "import urllib.request; resp=urllib.request.urlopen('http://127.0.0.1:8000/api/v1/shorten/all'); print(resp.status, resp.read().decode())"
+uv run python -c "import urllib.request; class NoRedirect(urllib.request.HTTPRedirectHandler):\n    def redirect_request(self, req, fp, code, msg, headers, newurl):\n        return None\n; opener=urllib.request.build_opener(NoRedirect); req=urllib.request.Request('http://127.0.0.1:8000/api/v1/my-link', method='GET');\ntry:\n    opener.open(req)\nexcept urllib.error.HTTPError as e:\n    print(e.code, e.headers.get('Location'))"
+uv run python -c "import urllib.request; resp=urllib.request.urlopen('http://127.0.0.1:8000/api/v1/analytics/my-link'); print(resp.status, resp.read().decode())"
 uv run python -c "import urllib.request; resp=urllib.request.urlopen('http://127.0.0.1:8000/mcp'); print(resp.status)"
 ```

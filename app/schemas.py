@@ -38,6 +38,7 @@ class ClickEventResponse(BaseModel):
 
 class URLAnalyticsResponse(BaseModel):
     id: str
+    short_url: str
     long_url: str
     total_clicks: int
     events: list[ClickEventResponse]

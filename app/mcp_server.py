@@ -1,5 +1,6 @@
 from fastmcp import FastMCP
 
+from app.config import BASE_URL
 from app.services import (
     AliasConflictError,
     AliasValidationError,
@@ -13,6 +14,9 @@ from app.services import (
 
 
 mcp = FastMCP("smolurls")
+
+def build_short_url(short_id: str) -> str:
+    return f"{BASE_URL}/{short_id}"
 
 
 @mcp.tool
@@ -30,6 +34,7 @@ def shorten_url(url: str, custom_alias: str | None = None) -> dict:
     return {
         "id": short.id,
         "long_url": short.long_url,
+        "short_url": build_short_url(short.id),
         "created_at": short.created_at.isoformat(),
     }
 
@@ -47,6 +52,7 @@ def get_short_url(short_id: str) -> dict:
 
     return {
         "id": short.id,
+        "short_url": build_short_url(short.id),
         "long_url": short.long_url,
         "created_at": short.created_at.isoformat(),
         "total_clicks": total_clicks,
@@ -64,6 +70,7 @@ def list_urls() -> list[dict]:
         {
             "id": short.id,
             "long_url": short.long_url,
+            "short_url": build_short_url(short.id),
             "created_at": short.created_at.isoformat(),
             "total_clicks": total_clicks,
         }
@@ -85,6 +92,7 @@ def get_analytics(short_id: str) -> dict:
     return {
         "id": short.id,
         "long_url": short.long_url,
+        "short_url": build_short_url(short.id),
         "total_clicks": len(events),
         "events": [
             {

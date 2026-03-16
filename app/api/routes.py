@@ -1,14 +1,15 @@
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
-from ..schemas import (
+from app.config import BASE_URL
+from app.schemas import (
     ClickEventResponse,
     ShortenRequest,
     ShortURLInfoResponse,
     ShortURLResponse,
     URLAnalyticsResponse,
 )
-from ..services import (
+from app.services import (
     AliasConflictError,
     AliasValidationError,
     IdGenerationError,
@@ -24,8 +25,8 @@ from ..services import (
 router = APIRouter()
 
 
-def build_short_url(request: Request, short_id: str) -> str:
-    return f"{str(request.base_url).rstrip('/')}/{short_id}"
+def build_short_url(short_id: str) -> str:
+    return f"{BASE_URL}/{short_id}"
 
 
 @router.post(
@@ -33,9 +34,10 @@ def build_short_url(request: Request, short_id: str) -> str:
     response_model=ShortURLResponse,
     status_code=status.HTTP_201_CREATED,
     operation_id="create_short_url",
+    tags=["urls"],
 )
 def create_short_url_route(
-    payload: ShortenRequest, request: Request
+    payload: ShortenRequest,
 ) -> ShortURLResponse:
     try:
         short = create_short_url(str(payload.url), payload.custom_alias)
@@ -55,7 +57,7 @@ def create_short_url_route(
     return ShortURLResponse(
         id=short.id,
         long_url=short.long_url,
-        short_url=build_short_url(request, short.id),
+        short_url=build_short_url(short.id),
         created_at=short.created_at,
     )
 
@@ -64,14 +66,15 @@ def create_short_url_route(
     "/shorten/all",
     response_model=list[ShortURLInfoResponse],
     operation_id="list_short_urls",
+    tags=["urls"],
 )
-def list_short_urls_route(request: Request) -> list[ShortURLInfoResponse]:
+def list_short_urls_route() -> list[ShortURLInfoResponse]:
     rows = list_short_urls()
     return [
         ShortURLInfoResponse(
             id=short.id,
             long_url=short.long_url,
-            short_url=build_short_url(request, short.id),
+            short_url=build_short_url(short.id),
             created_at=short.created_at,
             total_clicks=total_clicks,
         )
@@ -83,8 +86,9 @@ def list_short_urls_route(request: Request) -> list[ShortURLInfoResponse]:
     "/shorten/{id}",
     response_model=ShortURLInfoResponse,
     operation_id="get_short_url_info",
+    tags=["urls"],
 )
-def get_short_url_info_route(id: str, request: Request) -> ShortURLInfoResponse:
+def get_short_url_info_route(id: str) -> ShortURLInfoResponse:
     try:
         short, total_clicks = get_short_url_info(id)
     except NotFoundError as exc:
@@ -95,7 +99,7 @@ def get_short_url_info_route(id: str, request: Request) -> ShortURLInfoResponse:
     return ShortURLInfoResponse(
         id=short.id,
         long_url=short.long_url,
-        short_url=build_short_url(request, short.id),
+        short_url=build_short_url(short.id),
         created_at=short.created_at,
         total_clicks=total_clicks,
     )
@@ -105,6 +109,7 @@ def get_short_url_info_route(id: str, request: Request) -> ShortURLInfoResponse:
     "/analytics/{id}",
     response_model=URLAnalyticsResponse,
     operation_id="get_url_analytics",
+    tags=["analytics"],
 )
 def get_url_analytics_route(id: str) -> URLAnalyticsResponse:
     try:
@@ -117,6 +122,7 @@ def get_url_analytics_route(id: str) -> URLAnalyticsResponse:
     return URLAnalyticsResponse(
         id=short.id,
         long_url=short.long_url,
+        short_url=build_short_url(short.id),
         total_clicks=len(events),
         events=[
             ClickEventResponse(
@@ -130,7 +136,7 @@ def get_url_analytics_route(id: str) -> URLAnalyticsResponse:
     )
 
 
-@router.get("/{id}", operation_id="redirect_short_url")
+@router.get("/{id}", operation_id="redirect_short_url", tags=["redirects"])
 def redirect_short_url_route(id: str, request: Request) -> RedirectResponse:
     try:
         long_url = resolve_and_track_redirect(

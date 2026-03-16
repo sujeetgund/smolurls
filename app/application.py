@@ -9,7 +9,7 @@ from app.mcp_server import mcp
 def create_api_app() -> FastAPI:
     init_db()
     api = FastAPI(title="smolurls API", version="0.1.0")
-    api.include_router(router)
+    api.include_router(router, prefix="/api/v1")
     return api
 
 
