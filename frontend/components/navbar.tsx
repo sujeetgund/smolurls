@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Link2, Menu, X } from "lucide-react";
+import Image from "next/image";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -23,10 +24,16 @@ export function Navbar() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-gray-100 transition-all duration-150 hover:text-white"
+          className="inline-flex items-center text-gray-100 transition-all duration-150 hover:text-white"
         >
-          <span className="inline-flex size-7 items-center justify-center rounded-md bg-violet-500/20 text-violet-400">
-            <Link2 className="size-4" />
+          <span className="inline-flex size-7 items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="smolurls logo"
+              width={28}
+              height={28}
+              priority
+            />
           </span>
           <span className="text-lg font-bold lowercase">smolurls</span>
         </Link>
