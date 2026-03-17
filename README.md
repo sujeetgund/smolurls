@@ -1,4 +1,7 @@
-# smolurls
+<div align="center">
+<img width="400" alt="smolurls" src="https://github.com/user-attachments/assets/caddb735-dd96-4b9f-8a95-7344c8296367" />
+</div>
+<br>
 
 A clean, production-ready URL shortener with analytics and native MCP tooling — built on FastAPI + FastMCP and Next.js, served from a single backend port.
 
